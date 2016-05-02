@@ -27,6 +27,7 @@ from openquake.commonlib import datastore, valid
 from openquake.commonlib.export import export
 from openquake.server.db import models
 from openquake.engine.export import core
+from openquake.engine import engine
 from openquake.server.db.schema.upgrades import upgrader
 from openquake.server.db import upgrade_manager
 
@@ -521,3 +522,5 @@ def get_result(result_id):
     output = models.get(models.Output, pk=result_id)
     job = output.oq_job
     return job.status, output.ds_key
+
+run_calc = engine.run_calc  # slow task

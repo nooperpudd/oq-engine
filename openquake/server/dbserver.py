@@ -43,7 +43,6 @@ def run_command(cmd, args, conn):
     class and `result` is an error string containing the traceback.
     """
     try:
-        logging.info('Processing %s%s', cmd, args)
         func = getattr(actions, cmd)
 
         # execute the function by trapping any possible exception

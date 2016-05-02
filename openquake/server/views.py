@@ -42,8 +42,8 @@ from openquake.engine import __version__ as oqversion
 from openquake.engine.export import core
 from openquake.engine import engine, logs
 from openquake.engine.export.core import DataStoreExportError
-from openquake.server import executor, utils
-from openquake.server.db import models, actions
+from openquake.server import utils
+from openquake.server.db import models
 
 METHOD_NOT_ALLOWED = 405
 NOT_IMPLEMENTED = 501
@@ -338,7 +338,10 @@ def run_calc(request):
 
     user = utils.get_user_data(request)
     try:
-        job_id, _fut = submit_job(einfo[0], user['name'], hazard_job_id)
+        job_id, oqparam = engine.job_from_file(
+            einfo[0], user['name'], hazard_job_id)
+        logs.dbcmd('@run_calc', job_id, oqparam, DEFAULT_LOG_LEVEL,
+                   None, '', hazard_job_id)
     except Exception as exc:  # no job created, for instance missing .xml file
         # get the exception message
         exc_msg = exc.args[0]
@@ -346,7 +349,7 @@ def run_calc(request):
             exc_msg = exc_msg.decode('utf-8')   # make it a unicode object
         else:
             assert isinstance(exc_msg, unicode), exc_msg
-        logging.error(exc_msg)
+        logging.error(exc_msg, exc_info=True)
         response_data = exc_msg.splitlines()
         status = 500
     else:
@@ -354,18 +357,6 @@ def run_calc(request):
         status = 200
     return HttpResponse(content=json.dumps(response_data), content_type=JSON,
                         status=status)
-
-
-def submit_job(job_ini, user_name, hazard_job_id=None,
-               loglevel=DEFAULT_LOG_LEVEL, logfile=None, exports=''):
-    """
-    Create a job object from the given job.ini file in the job directory
-    and submit it to the job queue. Returns the job ID.
-    """
-    job_id, oqparam = engine.job_from_file(job_ini, user_name, hazard_job_id)
-    fut = executor.submit(engine.run_calc, job_id, oqparam, loglevel,
-                          logfile, exports, hazard_job_id)
-    return job_id, fut
 
 
 @require_http_methods(['GET'])
