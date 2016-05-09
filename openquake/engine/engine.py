@@ -48,8 +48,8 @@ if USE_CELERY:
             sys.exit("No live compute nodes, aborting calculation")
         num_cores = sum(stats[k]['pool']['max-concurrency'] for k in stats)
         OqParam.concurrent_tasks.default = 2 * num_cores
-        logs.LOG.info('Using %s, %d cores',
-                      ', '.join(sorted(stats)), num_cores)
+        logs.LOG.info(
+            'Using %s, %d cores', ', '.join(sorted(stats)), num_cores)
 
     def celery_cleanup(terminate, task_ids=()):
         """
@@ -165,10 +165,10 @@ def run_calc(job_id, oqparam, log_level, log_file, exports,
     :param exports:
         A comma-separated string of export types.
     """
-    if USE_CELERY:
-        set_concurrent_tasks_default()
     monitor = Monitor('total runtime', measuremem=True)
     with logs.handle(job_id, log_level, log_file):  # run the job
+        if USE_CELERY:
+            set_concurrent_tasks_default()
         calc = base.calculators(oqparam, monitor, calc_id=job_id)
         tb = 'None\n'
         try:
