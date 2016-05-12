@@ -20,7 +20,6 @@
 import os
 import sys
 from django.core.management import execute_from_command_line
-from openquake.server import executor
 from openquake.engine import logs
 
 
@@ -63,5 +62,4 @@ if __name__ == "__main__":
         logs.dbcmd('check_outdated')
         # reset is_running
         logs.dbcmd('reset_is_running')
-    with executor:
-        execute_from_command_line(argv)
+    execute_from_command_line(argv)
