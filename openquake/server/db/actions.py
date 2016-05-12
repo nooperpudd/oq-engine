@@ -531,4 +531,13 @@ def get_result(result_id):
     job = output.oq_job
     return job.id, job.status, os.path.dirname(job.ds_calc_dir), output.ds_key
 
-run_calc = engine.run_calc  # slow task
+
+def run_calc(job_id, oqparam, log_level, log_file, exports,
+             hazard_calculation_id=None):
+    """
+    Small wrapper around :function:`openquake.engine.engine.run_calc`
+    """
+    engine.run_calc(job_id, oqparam, log_level, log_file, exports,
+                    hazard_calculation_id)
+    # NB: nothing is returned; returning a Calculator object would not
+    # work since it contains a datastore which is not pickleable
