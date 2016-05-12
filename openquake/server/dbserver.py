@@ -17,10 +17,9 @@
 #  along with OpenQuake.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from Queue import Queue
-from threading import Thread
-from multiprocessing import Process
+from concurrent.futures import ProcessPoolExecutor
 from multiprocessing.connection import Listener
+from multiprocessing import Queue
 
 from openquake.commonlib import sap
 from openquake.commonlib.parallel import safely_call
@@ -33,6 +32,7 @@ if hasattr(django, 'setup'):  # >= 1.7
     django.setup()
 
 queue = Queue()
+executor = ProcessPoolExecutor(2)
 
 
 def run_command(cmd, args, conn):
@@ -77,12 +77,11 @@ class DbServer(object):
     def __init__(self, address, authkey):
         self.address = address
         self.authkey = authkey
-        self.thread = Thread(target=run_commands)
 
     def loop(self):
         listener = Listener(self.address, backlog=5, authkey=self.authkey)
         logging.warn('DB server listening on %s:%d...' % self.address)
-        self.thread.start()
+        future = executor.submit(run_commands)
         cmd = None
         try:
             while cmd != 'stop':
@@ -98,16 +97,13 @@ class DbServer(object):
                 cmd, args = cmd_[0], cmd_[1:]
                 if cmd.startswith('@'):  # slow command, run in process
                     cmd = cmd[1:]  # strip @
-                    proc = Process(
-                        target=run_command, name=cmd, args=(cmd, args, conn))
-                    proc.start()
-                    logging.warn('Started %s%s in process %d',
-                                 cmd, args, proc.pid)
+                    executor.submit(run_command, cmd, args, conn)
+                    logging.warn('Started %s%s', cmd, args)
                 else:
                     queue.put((conn, cmd, args))
         finally:
             listener.close()
-            self.thread.join()
+            future.result()
 
 
 def runserver(dbpathport=None, loglevel='WARN'):
@@ -119,7 +115,8 @@ def runserver(dbpathport=None, loglevel='WARN'):
         DATABASE['PORT'] = int(port)
     else:
         addr = config.DBS_ADDRESS
-    DbServer(addr, config.DBS_AUTHKEY).loop()
+    with executor:
+        DbServer(addr, config.DBS_AUTHKEY).loop()
 
 parser = sap.Parser(runserver)
 parser.arg('dbpathport', 'dbpath:port')
