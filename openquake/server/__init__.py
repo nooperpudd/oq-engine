@@ -17,8 +17,4 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from concurrent.futures import ThreadPoolExecutor
-
-# recommended setting for development
-
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'openquake.server.settings')
