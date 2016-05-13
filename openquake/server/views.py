@@ -340,6 +340,7 @@ def run_calc(request):
     try:
         job_id, oqparam = engine.job_from_file(
             einfo[0], user['name'], hazard_job_id)
+        # this is blocking
         logs.dbcmd('@run_calc', job_id, oqparam, DEFAULT_LOG_LEVEL,
                    None, '', hazard_job_id)
     except Exception as exc:  # no job created, for instance missing .xml file
